@@ -1,9 +1,10 @@
 package main
 
 import (
-	"fmt"
+	"github.com/PasswordManager/controller"
 )
 
 func main() {
-	fmt.Println("Hello, world!")
+	controller := new(controller.Input)
+	controller.HandleUserInput()
 }
