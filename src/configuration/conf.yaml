@@ -1,6 +1,7 @@
-host: "192.168.1.5"
+host: 192.168.1.5
 port: "8543"
-user: "josue"
-pass: ""
-
+user: josue
+db: pm
+db_pass: josue
+pass: $2a$16$DejogZUdkEayaEikgrWWWOs5PsEvHd.5P4RTTe1OytK3voGWt6bE2
 cost: 16

@@ -1,12 +1,12 @@
 package controller
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 
-	"github.com/PasswordManager/configuration"
-	"golang.org/x/crypto/bcrypt"
+	"github.com/PasswordManager/service"
+	"github.com/sirupsen/logrus"
+	easy "github.com/t-tomalak/logrus-easy-formatter"
 )
 
 //Input ...
@@ -20,11 +20,38 @@ type Input struct {
 //HandleUserInput ...
 //Handles User input for command execution
 func (input *Input) HandleUserInput() {
+	log := &logrus.Logger{
+		Out:   os.Stderr,
+		Level: logrus.DebugLevel,
+		Formatter: &easy.Formatter{
+			TimestampFormat: "2006-01-02 15:04:05",
+			LogFormat:       "[%lvl%] %time% | %msg%",
+		},
+	}
+
 	switch command := os.Args[1]; command {
 	case "init":
-		handleInitCommand()
+		if exec, why, lvl := handleInitCommand(); !exec {
+			if lvl == "ERR" {
+				log.Error(why)
+			} else {
+				log.Warning(why)
+			}
+		} else {
+			log.Info("PM initialization successful")
+		}
 	case "get":
-		// handleGetCommand(os.Args[2])
+		if len(os.Args) < 3 {
+			missingSubCommand()
+			return
+		}
+		if exec, why, lvl := handleGetCommand(os.Args[2]); !exec {
+			if lvl == "ERR" {
+				log.Error(why)
+			} else {
+				log.Warning(why)
+			}
+		}
 	case "set":
 		// handleSetCommand(os.Args[2])
 	case "edit":
@@ -33,52 +60,22 @@ func (input *Input) HandleUserInput() {
 		// handleimportCommand(os.Args[2])
 	case "export":
 		// handleExportCommand(os.Args[2])
+	case "update":
+	case "help":
+		printUsage()
 	default:
+		commandNotFound()
 		return
 	}
 }
 
-func handleInitCommand() (bool, string) {
-	conf := new(configuration.Configuration)
-	err := conf.LoadConfiguration()
-	if err != nil {
-		return false, err.Error()
-	}
-
-	if conf.Password != "" {
-		return false, "Password already configured. No need to init again"
-	}
-
-	reader := bufio.NewReader(os.Stdin)
-
-	fmt.Print("Enter password: ")
-	bPassword, err := reader.ReadString('\n')
-	if err != nil {
-		return false, err.Error()
-	}
-
-	fmt.Print("Confirm password: ")
-	b2Password, err := reader.ReadString('\n')
-	if err != nil {
-		return false, err.Error()
-	}
-
-	if bPassword != b2Password {
-		return false, "Passwords doesn't match!"
-	}
-
-	hash, err := bcrypt.GenerateFromPassword([]byte(bPassword), conf.Cost)
-	if err != nil {
-		return false, err.Error()
-	}
-	fmt.Println(string(hash))
-
-	return true, ""
+func handleInitCommand() (bool, string, string) {
+	return service.InitService()
 }
 
-// func handleGetCommand(subcommand string) (bool, string) {
-
-// }
+func handleGetCommand(subcommand string) (bool, string, string) {
+	return true, "", ""
+}
 
 // func handleSetCommand(subcommand string) (bool, string) {
 
@@ -95,3 +92,39 @@ func handleInitCommand() (bool, string) {
 // func handleExportCommand(subcommand string) (bool, string) {
 
 // }
+
+func commandNotFound() {
+	fmt.Printf("Command not recognized %s - Usage of pm:\n\n", os.Args[1])
+	printUsage()
+}
+
+func subCommandNotFound() {
+	fmt.Printf("SubCommand not recognized %s - Usage of pm:\n\n", os.Args[2])
+	printUsageSubCommands()
+}
+
+func missingSubCommand() {
+	fmt.Printf("SubCommand is missing for this command %s - Usage of pm:\n\n", os.Args[1])
+	printUsageSubCommands()
+}
+
+func printUsage() {
+	fmt.Printf("\t$> pm COMMAND [SUBCOMMAND] search\n\n")
+	fmt.Printf("Commands available:\n\texport\n\tget\n\thelp\n\timport\n\tinit\n\tset\n\tupdate\n\n")
+	fmt.Printf("Example: $> pm get password gmail")
+}
+
+func printUsageSubCommands() {
+	switch os.Args[1] {
+	case "get":
+		fmt.Printf("get | Return wanted information saved previously\n")
+		fmt.Printf("\t$> pm get [SUBCOMMAND] search\n\n")
+		fmt.Printf("Subcommands available:\n\tpassword\n\tusername\n\n")
+		fmt.Printf("Example: $> pm get password gmail")
+	case "update":
+		fmt.Printf("update | update information\n")
+		fmt.Printf("\t$> pm update [SUBCOMMAND] search\n\n")
+		fmt.Printf("Subcommands available:\n\tpassword\n\tusername\n\n")
+		fmt.Printf("Example: $> pm update username gmail")
+	}
+}
