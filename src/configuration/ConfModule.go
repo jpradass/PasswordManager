@@ -16,12 +16,13 @@ type Configuration struct {
 	Password   string `yaml:"pass"`
 	Cost       int    `yaml:"cost"`
 	Collection string `yaml:"collection"`
+	Key        string `yaml:"key"`
 }
 
 // LoadConfiguration ...
 // Loads configuration to database connection
 func (conf *Configuration) LoadConfiguration() error {
-	file, err := ioutil.ReadFile("configuration/conf.yaml")
+	file, err := ioutil.ReadFile("configuration/.conf.yaml")
 	if err != nil {
 		return err
 	}
@@ -42,5 +43,5 @@ func (conf *Configuration) SetPassword(pwd string) error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile("configuration/conf.yaml", out, 0644)
+	return ioutil.WriteFile("configuration/.conf.yaml", out, 0644)
 }

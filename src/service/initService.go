@@ -9,7 +9,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var conf *configuration.Configuration
+var (
+	conf *configuration.Configuration
+	iv   = "1010101010101010"
+)
 
 func init() {
 	conf = new(configuration.Configuration)
@@ -25,41 +28,41 @@ func InitService() (bool, string, string) {
 
 	reader := bufio.NewReader(os.Stdin)
 
-	fmt.Print("Enter postgres hostname/ip address: ")
+	fmt.Print("Enter database hostname/ip address: ")
 	host, err := reader.ReadString('\n')
 	if err != nil {
 		return false, err.Error(), "ERR"
 	}
 	conf.Host = host
 
-	fmt.Print("Enter postgres port: ")
-	port, err := reader.ReadString('\n')
-	if err != nil {
-		return false, err.Error(), "ERR"
-	}
-	conf.Port = port
-
-	fmt.Print("Enter postgres username: ")
+	fmt.Print("Enter database username: ")
 	username, err := reader.ReadString('\n')
 	if err != nil {
 		return false, err.Error(), "ERR"
 	}
 	conf.User = username
 
-	fmt.Print("Enter postgres database: ")
+	fmt.Print("Enter database password: ")
+	dbpassword, err := reader.ReadString('\n')
+	if err != nil {
+		return false, err.Error(), "ERR"
+	}
+	conf.DbPass = dbpassword
+
+	fmt.Print("Enter database name: ")
 	db, err := reader.ReadString('\n')
 	if err != nil {
 		return false, err.Error(), "ERR"
 	}
 	conf.DB = db
 
-	fmt.Print("Enter password: ")
+	fmt.Print("Enter master password: ")
 	bPassword, err := reader.ReadString('\n')
 	if err != nil {
 		return false, err.Error(), "ERR"
 	}
 
-	fmt.Print("Confirm password: ")
+	fmt.Print("Confirm master password: ")
 	b2Password, err := reader.ReadString('\n')
 	if err != nil {
 		return false, err.Error(), "ERR"
