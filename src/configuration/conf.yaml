@@ -1,7 +1,7 @@
-host: pm-cluster0.rrwwa.azure.mongodb.net
-user: josue-mongodb
-db: pm
-collection: josue-services
+host:
+user:
+db: 
+collection: 
 db_pass: 
-pass: $2a$16$DejogZUdkEayaEikgrWWWOs5PsEvHd.5P4RTTe1OytK3voGWt6bE2
+pass: 
 cost: 16
