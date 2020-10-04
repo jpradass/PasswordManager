@@ -74,6 +74,12 @@ func handleInitCommand() (bool, string, string) {
 }
 
 func handleGetCommand(subcommand string) (bool, string, string) {
+	if subcommand == "password" {
+		service.GetPassword(os.Args[3])
+	} else if subcommand == "username" {
+
+	}
+
 	return true, "", ""
 }
 

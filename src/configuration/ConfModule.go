@@ -9,12 +9,13 @@ import (
 // Configuration ...
 // Configuration file structure to read yaml configuration file
 type Configuration struct {
-	Host     string `yaml:"host"`
-	Port     string `yaml:"port"`
-	User     string `yaml:"user"`
-	DB       string `yaml:"db"`
-	Password string `yaml:"pass"`
-	Cost     int    `yaml:"cost"`
+	Host       string `yaml:"host"`
+	User       string `yaml:"user"`
+	DB         string `yaml:"db"`
+	DbPass     string `yaml:"db_pass"`
+	Password   string `yaml:"pass"`
+	Cost       int    `yaml:"cost"`
+	Collection string `yaml:"collection"`
 }
 
 // LoadConfiguration ...

@@ -1,7 +1,7 @@
-host: 192.168.1.5
-port: "8543"
-user: josue
+host: pm-cluster0.rrwwa.azure.mongodb.net
+user: josue-mongodb
 db: pm
-db_pass: josue
+collection: josue-services
+db_pass: 
 pass: $2a$16$DejogZUdkEayaEikgrWWWOs5PsEvHd.5P4RTTe1OytK3voGWt6bE2
 cost: 16
