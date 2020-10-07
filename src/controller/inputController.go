@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/PasswordManager/service"
+	"github.com/atotto/clipboard"
 	"github.com/sirupsen/logrus"
 	easy "github.com/t-tomalak/logrus-easy-formatter"
 )
@@ -51,9 +52,23 @@ func (input *Input) HandleUserInput() {
 			} else {
 				log.Warning(why)
 			}
+		} else {
+			log.Info(why)
 		}
 	case "set":
-		// handleSetCommand(os.Args[2])
+		if len(os.Args) < 3 {
+			missingSubCommand()
+			return
+		}
+		if exec, why, lvl := handleSetCommand(os.Args[2]); !exec {
+			if lvl == "ERR" {
+				log.Error(why)
+			} else {
+				log.Warning(why)
+			}
+		} else {
+			log.Info(why)
+		}
 	case "edit":
 		// handleEditCommand(os.Args[2])
 	case "import":
@@ -61,6 +76,19 @@ func (input *Input) HandleUserInput() {
 	case "export":
 		// handleExportCommand(os.Args[2])
 	case "update":
+		if len(os.Args) < 3 {
+			missingSubCommand()
+			return
+		}
+		if exec, why, lvl := handleUpdateCommand(os.Args[2]); !exec {
+			if lvl == "ERR" {
+				log.Error(why)
+			} else {
+				log.Warning(why)
+			}
+		} else {
+			log.Info(why)
+		}
 	case "help":
 		printUsage()
 	default:
@@ -75,7 +103,12 @@ func handleInitCommand() (bool, string, string) {
 
 func handleGetCommand(subcommand string) (bool, string, string) {
 	if subcommand == "password" {
-		service.GetPassword(os.Args[3])
+		pwd, err := service.GetPassword(os.Args[3])
+		if err != nil {
+			return false, err.Error(), "ERR"
+		}
+		clipboard.WriteAll(pwd)
+		return true, "password copy to the clipboard!", "INFO"
 	} else if subcommand == "username" {
 
 	}
@@ -83,9 +116,13 @@ func handleGetCommand(subcommand string) (bool, string, string) {
 	return true, "", ""
 }
 
-// func handleSetCommand(subcommand string) (bool, string) {
-
-// }
+func handleSetCommand(subcommand string) (bool, string, string) {
+	result, err := service.SetService("gmail", "pepes", "hola")
+	if err != nil {
+		return false, err.Error(), "ERR"
+	}
+	return true, result, "INFO"
+}
 
 // func handleEditCommand(subcommand string) (bool, string) {
 
@@ -98,6 +135,33 @@ func handleGetCommand(subcommand string) (bool, string, string) {
 // func handleExportCommand(subcommand string) (bool, string) {
 
 // }
+
+func handleUpdateCommand(subcommand string) (bool, string, string) {
+	if subcommand == "password" {
+		fPassword := "hola"
+		// reader := bufio.NewReader(os.Stdin)
+		// fmt.Print("Enter password: ")
+		// fPassword, err := reader.ReadString('\n')
+		// if err != nil {
+		// 	return false, err.Error(), "ERR"
+		// }
+
+		// fmt.Print("Confirm password: ")
+		// sPassword, err := reader.ReadString('\n')
+		// if err != nil {
+		// 	return false, err.Error(), "ERR"
+		// }
+
+		// if fPassword != sPassword {
+		// 	return false, "Passwords doesn't match!", "WARN"
+		// }
+		service.UpdatePassword(os.Args[3], fPassword)
+	} else if subcommand == "username" {
+
+	}
+
+	return true, "", ""
+}
 
 func commandNotFound() {
 	fmt.Printf("Command not recognized %s - Usage of pm:\n\n", os.Args[1])

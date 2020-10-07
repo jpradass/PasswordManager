@@ -2,8 +2,10 @@ package remotedbadapter
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 
@@ -12,7 +14,14 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func getConnection(conf *configuration.Configuration) (*mongo.Client, error, context.Context) {
+type Document struct {
+	Date     time.Time `bson:"date"`
+	Service  string    `bson:"service"`
+	Username string    `bson:"username"`
+	Password string    `bson:"password"`
+}
+
+func getConnection(conf *configuration.Configuration) (*mongo.Client, context.Context, error) {
 	// ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	// // defer cancel()
 	ctx := context.Background()
@@ -20,15 +29,59 @@ func getConnection(conf *configuration.Configuration) (*mongo.Client, error, con
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoURI))
 	if err != nil {
-		return nil, err, nil
+		return nil, nil, err
 	}
-	return client, nil, ctx
+	return client, ctx, err
 }
 
 //SearchPassword ...
 //Search for the password of indicated service
-func SearchPassword(service string, conf *configuration.Configuration) (string, error) {
-	client, err, ctx := getConnection(conf)
+func SearchPassword(service []byte, conf *configuration.Configuration) ([]byte, error) {
+	client, ctx, err := getConnection(conf)
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.Disconnect(ctx)
+
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	collection := client.Database(conf.DB).Collection(conf.Collection)
+	cur, err := collection.Find(ctx, bson.M{"service": base64.StdEncoding.EncodeToString(service)})
+	if err != nil {
+		return nil, err
+	}
+
+	var passwordFetched []bson.M
+	if err = cur.All(ctx, &passwordFetched); err != nil {
+		return nil, err
+	}
+	if len(passwordFetched) > 1 {
+		return nil, errors.New("Too many passwords fetched, be more specific")
+	}
+	if len(passwordFetched) == 0 {
+		return nil, errors.New("No password fetched. Do you have a typo in your service?")
+	}
+
+	pwd, ok := passwordFetched[0]["password"].(string)
+	if !ok {
+		return nil, errors.New("Something went wrong trying to fetch the password")
+	}
+
+	bytepwd, err := base64.StdEncoding.DecodeString(pwd)
+	if err != nil {
+		return nil, err
+	}
+	return bytepwd, nil
+}
+
+//UpdatePassword ...
+//Update a password of a given service
+func UpdatePassword(service []byte, pwd []byte, conf *configuration.Configuration) (string, error) {
+	client, ctx, err := getConnection(conf)
 	if err != nil {
 		return "", err
 	}
@@ -39,23 +92,44 @@ func SearchPassword(service string, conf *configuration.Configuration) (string, 
 	if err != nil {
 		return "", err
 	}
-
 	collection := client.Database(conf.DB).Collection(conf.Collection)
-	cur, err := collection.Find(ctx, bson.M{"service": service})
+	_, err = collection.UpdateOne(
+		ctx,
+		bson.M{"service": base64.StdEncoding.EncodeToString(service)},
+		bson.D{
+			{"$set", bson.D{{"password", pwd}}},
+		},
+	)
+	if err != nil {
+		return "", err
+	}
+	return "Password updated!", nil
+}
+
+//InsertService ...
+//Insert a new service into the db
+func InsertService(service []byte, pwd []byte, user []byte, conf *configuration.Configuration) (string, error) {
+	client, ctx, err := getConnection(conf)
 	if err != nil {
 		return "", err
 	}
 
-	var passwordFetched []bson.M
-	if err = cur.All(ctx, &passwordFetched); err != nil {
+	defer client.Disconnect(ctx)
+
+	err = client.Ping(ctx, nil)
+	if err != nil {
 		return "", err
 	}
-	if len(passwordFetched) > 1 {
-		return "", errors.New("Too many passwords fetched, be more specific")
+	collection := client.Database(conf.DB).Collection(conf.Collection)
+
+	_, err = collection.InsertOne(ctx, Document{
+		Date:     time.Now(),
+		Service:  base64.StdEncoding.EncodeToString(service),
+		Username: base64.StdEncoding.EncodeToString(user),
+		Password: base64.StdEncoding.EncodeToString(pwd),
+	})
+	if err != nil {
+		return "", err
 	}
-	pwd, ok := passwordFetched[0]["password"].(string)
-	if !ok {
-		return "", errors.New("Something went wrong trying to fetch the password")
-	}
-	return pwd, nil
+	return "Inserted new service", nil
 }

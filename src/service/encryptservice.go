@@ -1,44 +1,50 @@
 package service
 
 import (
-	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/rand"
+	"io"
 )
 
-func encrypt(chain string) (string, error) {
+func encrypt(chain string) ([]byte, error) {
+	c, err := aes.NewCipher([]byte(conf.Key))
+	if err != nil {
+		return nil, err
+	}
+
+	gcm, err := cipher.NewGCM(c)
+	if err != nil {
+		return nil, err
+	}
+
+	nonce := make([]byte, gcm.NonceSize())
+	if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
+		return nil, err
+	}
+	return gcm.Seal(nonce, nonce, []byte(chain), nil), nil
+}
+
+func decrypt(crypted []byte) (string, error) {
 	block, err := aes.NewCipher([]byte(conf.Key))
 	if err != nil {
 		return "", err
 	}
 
-	ecb := cipher.NewCBCEncrypter(block, []byte(iv))
-	content := pkcs5padding([]byte(chain), block.BlockSize())
-	crypted := make([]byte, len(content))
-	ecb.CryptBlocks(crypted, content)
-
-	return string(crypted), nil
-}
-
-func decrypt(crypted string) (string, error) {
-	block, err := aes.NewCipher([]byte(conf.Key))
+	gcm, err := cipher.NewGCM(block)
 	if err != nil {
 		return "", err
 	}
-	ecb := cipher.NewCBCEncrypter(block, []byte(iv))
-	decrypted := make([]byte, len(crypted))
-	ecb.CryptBlocks(decrypted, []byte(crypted))
 
-	return string(pkcs5trimming(decrypted)), nil
-}
+	nonceSize := gcm.NonceSize()
+	if len(crypted) < nonceSize {
+		return "", err
+	}
 
-func pkcs5padding(ciphertext []byte, blockSize int) []byte {
-	padding := blockSize - len(ciphertext)%blockSize
-	padtext := bytes.Repeat([]byte{byte(padding)}, padding)
-	return append(ciphertext, padtext...)
-}
-
-func pkcs5trimming(encrypt []byte) []byte {
-	padding := encrypt[len(encrypt)-1]
-	return encrypt[:len(encrypt)-int(padding)]
+	nonce, cryptedtext := crypted[:nonceSize], crypted[nonceSize:]
+	text, err := gcm.Open(nil, nonce, cryptedtext, nil)
+	if err != nil {
+		return "", err
+	}
+	return string(text), nil
 }
