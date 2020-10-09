@@ -36,7 +36,7 @@ func getConnection(conf *configuration.Configuration) (*mongo.Client, context.Co
 
 //SearchPassword ...
 //Search for the password of indicated service
-func SearchPassword(service []byte, conf *configuration.Configuration) ([]byte, error) {
+func SearchPassword(service string, conf *configuration.Configuration) ([]byte, error) {
 	client, ctx, err := getConnection(conf)
 	if err != nil {
 		return nil, err
@@ -50,7 +50,7 @@ func SearchPassword(service []byte, conf *configuration.Configuration) ([]byte, 
 	}
 
 	collection := client.Database(conf.DB).Collection(conf.Collection)
-	cur, err := collection.Find(ctx, bson.M{"service": base64.StdEncoding.EncodeToString(service)})
+	cur, err := collection.Find(ctx, bson.M{"service": service})
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func SearchPassword(service []byte, conf *configuration.Configuration) ([]byte, 
 
 //UpdatePassword ...
 //Update a password of a given service
-func UpdatePassword(service []byte, pwd []byte, conf *configuration.Configuration) (string, error) {
+func UpdatePassword(service string, pwd []byte, conf *configuration.Configuration) (string, error) {
 	client, ctx, err := getConnection(conf)
 	if err != nil {
 		return "", err
@@ -95,7 +95,7 @@ func UpdatePassword(service []byte, pwd []byte, conf *configuration.Configuratio
 	collection := client.Database(conf.DB).Collection(conf.Collection)
 	_, err = collection.UpdateOne(
 		ctx,
-		bson.M{"service": base64.StdEncoding.EncodeToString(service)},
+		bson.M{"service": service},
 		bson.D{
 			{"$set", bson.D{{"password", pwd}}},
 		},
@@ -108,7 +108,7 @@ func UpdatePassword(service []byte, pwd []byte, conf *configuration.Configuratio
 
 //InsertService ...
 //Insert a new service into the db
-func InsertService(service []byte, pwd []byte, user []byte, conf *configuration.Configuration) (string, error) {
+func InsertService(service string, pwd []byte, user []byte, conf *configuration.Configuration) (string, error) {
 	client, ctx, err := getConnection(conf)
 	if err != nil {
 		return "", err
@@ -124,7 +124,7 @@ func InsertService(service []byte, pwd []byte, user []byte, conf *configuration.
 
 	_, err = collection.InsertOne(ctx, Document{
 		Date:     time.Now(),
-		Service:  base64.StdEncoding.EncodeToString(service),
+		Service:  service,
 		Username: base64.StdEncoding.EncodeToString(user),
 		Password: base64.StdEncoding.EncodeToString(pwd),
 	})
