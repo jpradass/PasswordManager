@@ -117,7 +117,12 @@ func handleGetCommand(subcommand string) (bool, string, string) {
 }
 
 func handleSetCommand(subcommand string) (bool, string, string) {
-	result, err := service.SetService("gmail", "pepes", "hola")
+	if len(os.Args) < 6 {
+		printUsageSubCommands()
+		return false, "Missing params", "ERR"
+	}
+	serv, username, password := os.Args[3], os.Args[4], os.Args[5]
+	result, err := service.SetService(serv, username, password)
 	if err != nil {
 		return false, err.Error(), "ERR"
 	}
@@ -188,13 +193,18 @@ func printUsageSubCommands() {
 	switch os.Args[1] {
 	case "get":
 		fmt.Printf("get | Return wanted information saved previously\n")
-		fmt.Printf("\t$> pm get [SUBCOMMAND] search\n\n")
+		fmt.Printf("\t$> pm get [SUBCOMMAND] search\n")
 		fmt.Printf("Subcommands available:\n\tpassword\n\tusername\n\n")
-		fmt.Printf("Example: $> pm get password gmail")
+		fmt.Printf("Example: $> pm get password gmail\n\n")
 	case "update":
 		fmt.Printf("update | update information\n")
-		fmt.Printf("\t$> pm update [SUBCOMMAND] search\n\n")
+		fmt.Printf("\t$> pm update [SUBCOMMAND] search\n")
 		fmt.Printf("Subcommands available:\n\tpassword\n\tusername\n\n")
-		fmt.Printf("Example: $> pm update username gmail")
+		fmt.Printf("Example: $> pm update username gmail\n\n")
+	case "set":
+		fmt.Printf("set | set a new service\n")
+		fmt.Printf("\t$> pm set [SUBCOMMAND] servicename username password\n")
+		fmt.Printf("Subcommands available:\n\tservice\n\n")
+		fmt.Printf("Example: $> pm set service gmail example@yahoo.es pass1234\n\n")
 	}
 }

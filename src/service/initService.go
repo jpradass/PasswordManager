@@ -2,8 +2,13 @@ package service
 
 import (
 	"bufio"
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"os"
+	"runtime"
+	"strconv"
+	"strings"
 
 	"github.com/PasswordManager/configuration"
 	"golang.org/x/crypto/bcrypt"
@@ -26,6 +31,15 @@ func InitService() (bool, string, string) {
 		return false, "Data already configured. No need to init again", "WARN"
 	}
 
+	_, err := os.Stat("configuration/services.json")
+	if err != nil {
+		f, err := os.OpenFile("configuration/services.json", os.O_CREATE, 0644)
+		if err != nil {
+			return false, err.Error(), "ERR"
+		}
+		f.Close()
+	}
+
 	reader := bufio.NewReader(os.Stdin)
 
 	fmt.Print("Enter database hostname/ip address: ")
@@ -33,6 +47,7 @@ func InitService() (bool, string, string) {
 	if err != nil {
 		return false, err.Error(), "ERR"
 	}
+	checkInput(&host)
 	conf.Host = host
 
 	fmt.Print("Enter database username: ")
@@ -40,6 +55,7 @@ func InitService() (bool, string, string) {
 	if err != nil {
 		return false, err.Error(), "ERR"
 	}
+	checkInput(&username)
 	conf.User = username
 
 	fmt.Print("Enter database password: ")
@@ -47,6 +63,7 @@ func InitService() (bool, string, string) {
 	if err != nil {
 		return false, err.Error(), "ERR"
 	}
+	checkInput(&dbpassword)
 	conf.DbPass = dbpassword
 
 	fmt.Print("Enter database name: ")
@@ -54,19 +71,30 @@ func InitService() (bool, string, string) {
 	if err != nil {
 		return false, err.Error(), "ERR"
 	}
+	checkInput(&db)
 	conf.DB = db
+
+	fmt.Print("Enter collection name: ")
+	collection, err := reader.ReadString('\n')
+	if err != nil {
+		return false, err.Error(), "ERR"
+	}
+	checkInput(&collection)
+	conf.Collection = collection
 
 	fmt.Print("Enter master password: ")
 	bPassword, err := reader.ReadString('\n')
 	if err != nil {
 		return false, err.Error(), "ERR"
 	}
+	checkInput(&bPassword)
 
 	fmt.Print("Confirm master password: ")
 	b2Password, err := reader.ReadString('\n')
 	if err != nil {
 		return false, err.Error(), "ERR"
 	}
+	checkInput(&b2Password)
 
 	if bPassword != b2Password {
 		return false, "Passwords doesn't match!", "WARN"
@@ -76,8 +104,27 @@ func InitService() (bool, string, string) {
 	if err != nil {
 		return false, err.Error(), "ERR"
 	}
+	conf.Password = string(hash)
+	key := make([]byte, 32)
+	_, err = rand.Read(key)
+	if err != nil {
+		return false, err.Error(), "ERR"
+	}
+	conf.Key = base64.StdEncoding.EncodeToString(key)[:32]
 
-	err = conf.SetPassword(string(hash))
+	fmt.Print("Enter bcrypt algorithm cost (by default 12): ")
+	cost, err := reader.ReadString('\n')
+	if err != nil {
+		return false, err.Error(), "ERR"
+	}
+	checkInput(&cost)
+	if len(cost) == 0 {
+		conf.Cost = 12
+	} else {
+		conf.Cost, _ = strconv.Atoi(cost)
+	}
+
+	err = conf.SaveConfiguration()
 	if err != nil {
 		return false, err.Error(), "ERR"
 	}
@@ -91,4 +138,10 @@ func CheckPasswords(provided string) bool {
 		return false
 	}
 	return true
+}
+
+func checkInput(input *string) {
+	if runtime.GOOS == "windows" {
+		*input = strings.Replace(*input, "\r\n", "", -1)
+	}
 }

@@ -35,10 +35,9 @@ func (conf *Configuration) LoadConfiguration() error {
 	return nil
 }
 
-//SetPassword ...
-//Set new master password through init command
-func (conf *Configuration) SetPassword(pwd string) error {
-	conf.Password = pwd
+//SaveConfiguration ...
+//Saves configuration to database connection
+func (conf *Configuration) SaveConfiguration() error {
 	out, err := yaml.Marshal(conf)
 	if err != nil {
 		return err

@@ -108,7 +108,7 @@ func UpdatePassword(service string, pwd []byte, conf *configuration.Configuratio
 
 //InsertService ...
 //Insert a new service into the db
-func InsertService(service string, pwd []byte, user []byte, conf *configuration.Configuration) (string, error) {
+func InsertService(service string, user []byte, pwd []byte, conf *configuration.Configuration) (string, error) {
 	client, ctx, err := getConnection(conf)
 	if err != nil {
 		return "", err
