@@ -26,6 +26,7 @@ func init() {
 
 //InitService ...
 //Init service setting up all data necessary
+// TODO Change this service, it has to received data from controller, not ask for it
 func InitService() (bool, string, string) {
 	if conf.Password != "" {
 		return false, "Data already configured. No need to init again", "WARN"
@@ -47,7 +48,7 @@ func InitService() (bool, string, string) {
 	if err != nil {
 		return false, err.Error(), "ERR"
 	}
-	checkInput(&host)
+	CheckInput(&host)
 	conf.Host = host
 
 	fmt.Print("Enter database username: ")
@@ -55,7 +56,7 @@ func InitService() (bool, string, string) {
 	if err != nil {
 		return false, err.Error(), "ERR"
 	}
-	checkInput(&username)
+	CheckInput(&username)
 	conf.User = username
 
 	fmt.Print("Enter database password: ")
@@ -63,7 +64,7 @@ func InitService() (bool, string, string) {
 	if err != nil {
 		return false, err.Error(), "ERR"
 	}
-	checkInput(&dbpassword)
+	CheckInput(&dbpassword)
 	conf.DbPass = dbpassword
 
 	fmt.Print("Enter database name: ")
@@ -71,7 +72,7 @@ func InitService() (bool, string, string) {
 	if err != nil {
 		return false, err.Error(), "ERR"
 	}
-	checkInput(&db)
+	CheckInput(&db)
 	conf.DB = db
 
 	fmt.Print("Enter collection name: ")
@@ -79,7 +80,7 @@ func InitService() (bool, string, string) {
 	if err != nil {
 		return false, err.Error(), "ERR"
 	}
-	checkInput(&collection)
+	CheckInput(&collection)
 	conf.Collection = collection
 
 	fmt.Print("Enter master password: ")
@@ -87,14 +88,14 @@ func InitService() (bool, string, string) {
 	if err != nil {
 		return false, err.Error(), "ERR"
 	}
-	checkInput(&bPassword)
+	CheckInput(&bPassword)
 
 	fmt.Print("Confirm master password: ")
 	b2Password, err := reader.ReadString('\n')
 	if err != nil {
 		return false, err.Error(), "ERR"
 	}
-	checkInput(&b2Password)
+	CheckInput(&b2Password)
 
 	if bPassword != b2Password {
 		return false, "Passwords doesn't match!", "WARN"
@@ -117,7 +118,7 @@ func InitService() (bool, string, string) {
 	if err != nil {
 		return false, err.Error(), "ERR"
 	}
-	checkInput(&cost)
+	CheckInput(&cost)
 	if len(cost) == 0 {
 		conf.Cost = 12
 	} else {
@@ -133,14 +134,12 @@ func InitService() (bool, string, string) {
 
 //CheckPasswords ...
 //Check if master password match
-func CheckPasswords(provided string) bool {
-	if err := bcrypt.CompareHashAndPassword([]byte(conf.Password), []byte(provided)); err != nil {
-		return false
-	}
-	return true
+func CheckPasswords(provided string) error {
+	return bcrypt.CompareHashAndPassword([]byte(conf.Password), []byte(provided))
 }
 
-func checkInput(input *string) {
+// TODO this has to be in the controller when all data requested is moved to there
+func CheckInput(input *string) {
 	if runtime.GOOS == "windows" {
 		*input = strings.Replace(*input, "\r\n", "", -1)
 	}

@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 
@@ -69,8 +70,8 @@ func (input *Input) HandleUserInput() {
 		} else {
 			log.Info(why)
 		}
-	case "edit":
-		// handleEditCommand(os.Args[2])
+	// case "edit":
+	// handleEditCommand(os.Args[2])
 	case "import":
 		// handleimportCommand(os.Args[2])
 	case "export":
@@ -91,6 +92,7 @@ func (input *Input) HandleUserInput() {
 		}
 	case "help":
 		printUsage()
+	case "generate":
 	default:
 		commandNotFound()
 		return
@@ -103,17 +105,35 @@ func handleInitCommand() (bool, string, string) {
 
 func handleGetCommand(subcommand string) (bool, string, string) {
 	if subcommand == "password" {
-		pwd, err := service.GetPassword(os.Args[3])
+		password := os.Args[3]
+		err := checkMasterPassword()
+		if err != nil {
+			return false, err.Error(), "ERR"
+		}
+
+		pwd, err := service.GetPassword(password)
 		if err != nil {
 			return false, err.Error(), "ERR"
 		}
 		clipboard.WriteAll(pwd)
-		return true, "password copy to the clipboard!", "INFO"
+		return true, "password copied to the clipboard!", "INFO"
 	} else if subcommand == "username" {
+		username := os.Args[3]
+		err := checkMasterPassword()
+		if err != nil {
+			return false, err.Error(), "ERR"
+		}
 
+		user, err := service.GetUsername(username)
+		if err != nil {
+			return false, err.Error(), "ERR"
+		}
+		clipboard.WriteAll(user)
+		return true, "user copied to the clipboard!", "INFO"
+	} else {
+		printUsageSubCommands()
+		return false, "Missing params", "ERR"
 	}
-
-	return true, "", ""
 }
 
 func handleSetCommand(subcommand string) (bool, string, string) {
@@ -121,7 +141,13 @@ func handleSetCommand(subcommand string) (bool, string, string) {
 		printUsageSubCommands()
 		return false, "Missing params", "ERR"
 	}
+
 	serv, username, password := os.Args[3], os.Args[4], os.Args[5]
+	err := checkMasterPassword()
+	if err != nil {
+		return false, err.Error(), "ERR"
+	}
+
 	result, err := service.SetService(serv, username, password)
 	if err != nil {
 		return false, err.Error(), "ERR"
@@ -143,29 +169,35 @@ func handleSetCommand(subcommand string) (bool, string, string) {
 
 func handleUpdateCommand(subcommand string) (bool, string, string) {
 	if subcommand == "password" {
-		fPassword := "hola"
-		// reader := bufio.NewReader(os.Stdin)
-		// fmt.Print("Enter password: ")
-		// fPassword, err := reader.ReadString('\n')
-		// if err != nil {
-		// 	return false, err.Error(), "ERR"
-		// }
+		serv := os.Args[3]
+		err := checkMasterPassword()
+		if err != nil {
+			return false, err.Error(), "ERR"
+		}
 
-		// fmt.Print("Confirm password: ")
-		// sPassword, err := reader.ReadString('\n')
-		// if err != nil {
-		// 	return false, err.Error(), "ERR"
-		// }
-
-		// if fPassword != sPassword {
-		// 	return false, "Passwords doesn't match!", "WARN"
-		// }
-		service.UpdatePassword(os.Args[3], fPassword)
+		result, err := service.UpdatePassword(serv)
+		if err != nil {
+			return false, err.Error(), "ERR"
+		}
+		return true, result, "INFO"
 	} else if subcommand == "username" {
 
 	}
 
 	return true, "", ""
+}
+
+func checkMasterPassword() error {
+	reader := bufio.NewReader(os.Stdin)
+
+	fmt.Print("Enter master password: ")
+	mpass, err := reader.ReadString('\n')
+	service.CheckInput(&mpass)
+	if err != nil {
+		return err
+	}
+
+	return service.CheckPasswords(mpass)
 }
 
 func commandNotFound() {

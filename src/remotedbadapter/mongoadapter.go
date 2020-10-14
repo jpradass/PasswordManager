@@ -14,7 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type Document struct {
+type document struct {
 	Date     time.Time `bson:"date"`
 	Service  string    `bson:"service"`
 	Username string    `bson:"username"`
@@ -59,6 +59,7 @@ func SearchPassword(service string, conf *configuration.Configuration) ([]byte, 
 	if err = cur.All(ctx, &passwordFetched); err != nil {
 		return nil, err
 	}
+
 	if len(passwordFetched) > 1 {
 		return nil, errors.New("Too many passwords fetched, be more specific")
 	}
@@ -76,6 +77,51 @@ func SearchPassword(service string, conf *configuration.Configuration) ([]byte, 
 		return nil, err
 	}
 	return bytepwd, nil
+}
+
+//SearchUsername ...
+//Search for the user of indicated service
+func SearchUsername(service string, conf *configuration.Configuration) ([]byte, error) {
+	client, ctx, err := getConnection(conf)
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.Disconnect(ctx)
+
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	collection := client.Database(conf.DB).Collection(conf.Collection)
+	cur, err := collection.Find(ctx, bson.M{"service": service})
+	if err != nil {
+		return nil, err
+	}
+
+	var usernameFetched []bson.M
+	if err = cur.All(ctx, &usernameFetched); err != nil {
+		return nil, err
+	}
+
+	if len(usernameFetched) > 1 {
+		return nil, errors.New("Too many users fetched, be more specific")
+	}
+	if len(usernameFetched) == 0 {
+		return nil, errors.New("No users fetched. Do you have a typo in your service?")
+	}
+
+	user, ok := usernameFetched[0]["username"].(string)
+	if !ok {
+		return nil, errors.New("Something went wrong trying to fetch the user")
+	}
+
+	byteuser, err := base64.StdEncoding.DecodeString(user)
+	if err != nil {
+		return nil, err
+	}
+	return byteuser, nil
 }
 
 //UpdatePassword ...
@@ -97,7 +143,7 @@ func UpdatePassword(service string, pwd []byte, conf *configuration.Configuratio
 		ctx,
 		bson.M{"service": service},
 		bson.D{
-			{"$set", bson.D{{"password", pwd}}},
+			{"$set", bson.D{{"password", base64.StdEncoding.EncodeToString(pwd)}}},
 		},
 	)
 	if err != nil {
@@ -122,7 +168,7 @@ func InsertService(service string, user []byte, pwd []byte, conf *configuration.
 	}
 	collection := client.Database(conf.DB).Collection(conf.Collection)
 
-	_, err = collection.InsertOne(ctx, Document{
+	_, err = collection.InsertOne(ctx, document{
 		Date:     time.Now(),
 		Service:  service,
 		Username: base64.StdEncoding.EncodeToString(user),
