@@ -3,7 +3,6 @@ package remotedbadapter
 import (
 	"context"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"time"
 
@@ -36,7 +35,52 @@ func getConnection(conf *configuration.Configuration) (*mongo.Client, context.Co
 
 //SearchPassword ...
 //Search for the password of indicated service
-func SearchPassword(service string, conf *configuration.Configuration) ([]byte, error) {
+// func SearchPassword(service string, conf *configuration.Configuration) ([]byte, error) {
+// 	client, ctx, err := getConnection(conf)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	defer client.Disconnect(ctx)
+
+// 	err = client.Ping(ctx, nil)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	collection := client.Database(conf.DB).Collection(conf.Collection)
+// 	cur, err := collection.Find(ctx, bson.M{"service": service})
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	var passwordFetched []bson.M
+// 	if err = cur.All(ctx, &passwordFetched); err != nil {
+// 		return nil, err
+// 	}
+
+// 	if len(passwordFetched) > 1 {
+// 		return nil, errors.New("Too many passwords fetched, be more specific")
+// 	}
+// 	if len(passwordFetched) == 0 {
+// 		return nil, errors.New("No password fetched. Do you have a typo in your service?")
+// 	}
+
+// 	pwd, ok := passwordFetched[0]["password"].(string)
+// 	if !ok {
+// 		return nil, errors.New("Something went wrong trying to fetch the password")
+// 	}
+
+// 	bytepwd, err := base64.StdEncoding.DecodeString(pwd)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return bytepwd, nil
+// }
+
+//SearchItem ...
+//Search for the item of indicated service
+func SearchItem(service string, itemdesc string, conf *configuration.Configuration) ([]byte, error) {
 	client, ctx, err := getConnection(conf)
 	if err != nil {
 		return nil, err
@@ -55,78 +99,33 @@ func SearchPassword(service string, conf *configuration.Configuration) ([]byte, 
 		return nil, err
 	}
 
-	var passwordFetched []bson.M
-	if err = cur.All(ctx, &passwordFetched); err != nil {
+	var itemsFetched []bson.M
+	if err = cur.All(ctx, &itemsFetched); err != nil {
 		return nil, err
 	}
 
-	if len(passwordFetched) > 1 {
-		return nil, errors.New("Too many passwords fetched, be more specific")
+	if len(itemsFetched) > 1 {
+		return nil, fmt.Errorf("Too many %ss fetched, be more specific", itemdesc)
 	}
-	if len(passwordFetched) == 0 {
-		return nil, errors.New("No password fetched. Do you have a typo in your service?")
+	if len(itemsFetched) == 0 {
+		return nil, fmt.Errorf("No %ss fetched. Do you have a typo in your service?", itemdesc)
 	}
 
-	pwd, ok := passwordFetched[0]["password"].(string)
+	item, ok := itemsFetched[0][itemdesc].(string)
 	if !ok {
-		return nil, errors.New("Something went wrong trying to fetch the password")
+		return nil, fmt.Errorf("Something went wrong trying to fetch the %s", itemdesc)
 	}
 
-	bytepwd, err := base64.StdEncoding.DecodeString(pwd)
+	byteitem, err := base64.StdEncoding.DecodeString(item)
 	if err != nil {
 		return nil, err
 	}
-	return bytepwd, nil
+	return byteitem, nil
 }
 
-//SearchUsername ...
-//Search for the user of indicated service
-func SearchUsername(service string, conf *configuration.Configuration) ([]byte, error) {
-	client, ctx, err := getConnection(conf)
-	if err != nil {
-		return nil, err
-	}
-
-	defer client.Disconnect(ctx)
-
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	collection := client.Database(conf.DB).Collection(conf.Collection)
-	cur, err := collection.Find(ctx, bson.M{"service": service})
-	if err != nil {
-		return nil, err
-	}
-
-	var usernameFetched []bson.M
-	if err = cur.All(ctx, &usernameFetched); err != nil {
-		return nil, err
-	}
-
-	if len(usernameFetched) > 1 {
-		return nil, errors.New("Too many users fetched, be more specific")
-	}
-	if len(usernameFetched) == 0 {
-		return nil, errors.New("No users fetched. Do you have a typo in your service?")
-	}
-
-	user, ok := usernameFetched[0]["username"].(string)
-	if !ok {
-		return nil, errors.New("Something went wrong trying to fetch the user")
-	}
-
-	byteuser, err := base64.StdEncoding.DecodeString(user)
-	if err != nil {
-		return nil, err
-	}
-	return byteuser, nil
-}
-
-//UpdatePassword ...
-//Update a password of a given service
-func UpdatePassword(service string, pwd []byte, conf *configuration.Configuration) (string, error) {
+//UpdateItem ...
+//Update item based on what is given
+func UpdateItem(service string, item []byte, itemdesc string, conf *configuration.Configuration) (string, error) {
 	client, ctx, err := getConnection(conf)
 	if err != nil {
 		return "", err
@@ -143,13 +142,13 @@ func UpdatePassword(service string, pwd []byte, conf *configuration.Configuratio
 		ctx,
 		bson.M{"service": service},
 		bson.D{
-			{"$set", bson.D{{"password", base64.StdEncoding.EncodeToString(pwd)}}},
+			{"$set", bson.D{{itemdesc, base64.StdEncoding.EncodeToString(item)}}},
 		},
 	)
 	if err != nil {
 		return "", err
 	}
-	return "Password updated!", nil
+	return fmt.Sprintf("%s updated!", itemdesc), nil
 }
 
 //InsertService ...
