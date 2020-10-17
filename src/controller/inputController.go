@@ -360,7 +360,7 @@ func missingSubCommand() {
 
 func printUsage() {
 	fmt.Printf("\t$> pm COMMAND [SUBCOMMAND] search\n\n")
-	fmt.Printf("Commands available:\n\texport\n\tget\n\thelp\n\timport\n\tinit\n\tset\n\tupdate\n\n")
+	fmt.Printf("Commands available:\n\texport\n\tget\n\thelp\n\timport\n\tinit\n\tset\n\tupdate\n\nlist\n\ngenerate\n\n")
 	fmt.Printf("Example: $> pm get password gmail")
 }
 

@@ -22,7 +22,7 @@ type Configuration struct {
 // LoadConfiguration ...
 // Loads configuration to database connection
 func (conf *Configuration) LoadConfiguration() error {
-	file, err := ioutil.ReadFile("configuration/.conf.yaml")
+	file, err := ioutil.ReadFile("configuration/conf.yaml")
 	if err != nil {
 		return err
 	}
@@ -42,5 +42,5 @@ func (conf *Configuration) SaveConfiguration() error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile("configuration/.conf.yaml", out, 0644)
+	return ioutil.WriteFile("configuration/conf.yaml", out, 0644)
 }
