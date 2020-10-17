@@ -193,10 +193,10 @@ func handleSetCommand(subcommand string) (bool, string, string) {
 	}
 
 	serv, username, password := os.Args[3], os.Args[4], os.Args[5]
-	// err := checkMasterPassword()
-	// if err != nil {
-	// 	return false, errorsdef.Mpassincorrect, "ERR"
-	// }
+	err := checkMasterPassword()
+	if err != nil {
+		return false, errorsdef.Mpassincorrect, "ERR"
+	}
 
 	result, err := service.SetService(serv, username, password)
 	if err != nil {
