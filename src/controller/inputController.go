@@ -166,10 +166,10 @@ func handleSetCommand(subcommand string) (bool, string, string) {
 	}
 
 	serv, username, password := os.Args[3], os.Args[4], os.Args[5]
-	err := checkMasterPassword()
-	if err != nil {
-		return false, errorsdef.Mpassincorrect, "ERR"
-	}
+	// err := checkMasterPassword()
+	// if err != nil {
+	// 	return false, errorsdef.Mpassincorrect, "ERR"
+	// }
 
 	result, err := service.SetService(serv, username, password)
 	if err != nil {
@@ -238,6 +238,23 @@ func handleDeleteCommand(subcommand string) (bool, string, string) {
 		printUsageSubCommands()
 		return false, errorsdef.Missingparams, "ERR"
 	}
+
+	serv := os.Args[3]
+	err := checkMasterPassword()
+	if err != nil {
+		return false, errorsdef.Mpassincorrect, "ERR"
+	}
+
+	confirmation := askForConfirmation()
+	if confirmation == "Y" || confirmation == "y" {
+		result, err := service.DeleteService(serv)
+		if err != nil {
+			return false, err.Error(), "ERR"
+		}
+		return true, result, "INFO"
+	}
+
+	return true, "Operation canceled!", "INFO"
 }
 
 func checkMasterPassword() error {
@@ -283,6 +300,20 @@ func askNewPassword() (string, error) {
 		return "", errors.New("passwords doesn't match")
 	}
 	return fPassword, nil
+}
+
+func askForConfirmation() string {
+	answer := ""
+	reader := bufio.NewReader(os.Stdin)
+
+	fmt.Print("Are you really sure? (Y/n): ")
+	answer, err := reader.ReadString('\n')
+	service.CheckInput(&answer)
+	if err != nil {
+		return ""
+	}
+
+	return answer
 }
 
 func commandNotFound() {
