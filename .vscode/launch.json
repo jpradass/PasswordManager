@@ -11,7 +11,7 @@
             "mode": "auto",
             "program": "${workspaceFolder}/src/main.go",
             "env": {},
-            "args": ["set", "service", "hotmail", "josue.pradas@hotmail.com", "bboy"]
+            "args": ["list"]
         }
     ]
 }

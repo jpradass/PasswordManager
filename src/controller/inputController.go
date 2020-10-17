@@ -111,6 +111,17 @@ func (input *Input) HandleUserInput() {
 		printUsage()
 	case "generate":
 	case "list":
+		if len(os.Args) < 1 {
+			missingSubCommand()
+			return
+		}
+		if exec, why, lvl := handleListCommand(); !exec {
+			if lvl == "ERR" {
+				log.Error(why)
+			} else {
+				log.Warning(why)
+			}
+		}
 	default:
 		commandNotFound()
 		return
@@ -119,6 +130,22 @@ func (input *Input) HandleUserInput() {
 
 func handleInitCommand() (bool, string, string) {
 	return service.InitService()
+}
+
+func handleListCommand() (bool, string, string) {
+	err := checkMasterPassword()
+	if err != nil {
+		return false, errorsdef.Mpassincorrect, "ERR"
+	}
+
+	fmt.Println("Services available")
+	fmt.Println("---------------------------")
+	for _, item := range *service.ListServices() {
+		fmt.Println(item)
+	}
+	fmt.Println("")
+
+	return true, "", ""
 }
 
 func handleGetCommand(subcommand string) (bool, string, string) {
