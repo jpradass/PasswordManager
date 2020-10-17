@@ -3,7 +3,10 @@ package service
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
+	"os"
+	"path/filepath"
 	"time"
 
 	guuid "github.com/google/uuid"
@@ -18,10 +21,16 @@ type uuidservice struct {
 	UUID      guuid.UUID `json:"uuid"`
 }
 
-var services map[string]uuidservice = make(map[string]uuidservice)
+var (
+	services map[string]uuidservice = make(map[string]uuidservice)
+	expath   string
+)
 
 func init() {
-	byteValue, _ := ioutil.ReadFile("configuration/services.json")
+	ex, _ := os.Executable()
+	expath = filepath.Dir(ex)
+
+	byteValue, _ := ioutil.ReadFile(fmt.Sprintf("%s/configuration/services.json", expath))
 	json.Unmarshal(byteValue, &services)
 }
 
@@ -87,7 +96,7 @@ func saveServicesJSON() error {
 		return err
 	}
 
-	err = ioutil.WriteFile("configuration/services.json", out, 0644)
+	err = ioutil.WriteFile(fmt.Sprintf("%s/configuration/services.json", expath), out, 0644)
 	if err != nil {
 		return err
 	}

@@ -1,8 +1,6 @@
 package main
 
-import (
-	"github.com/PasswordManager/controller"
-)
+import "github.com/PasswordManager/controller"
 
 func main() {
 	controller := new(controller.Input)

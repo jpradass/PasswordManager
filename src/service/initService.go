@@ -32,9 +32,9 @@ func InitService() (bool, string, string) {
 		return false, "Data already configured. No need to init again", "WARN"
 	}
 
-	_, err := os.Stat("configuration/services.json")
+	_, err := os.Stat(fmt.Sprintf("%s/configuration/services.json", expath))
 	if err != nil {
-		f, err := os.OpenFile("configuration/services.json", os.O_CREATE, 0644)
+		f, err := os.OpenFile(fmt.Sprintf("%s/configuration/services.json", expath), os.O_CREATE, 0644)
 		if err != nil {
 			return false, err.Error(), "ERR"
 		}

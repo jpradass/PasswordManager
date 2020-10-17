@@ -1,7 +1,10 @@
 package configuration
 
 import (
+	"fmt"
 	"io/ioutil"
+	"os"
+	"path/filepath"
 
 	"gopkg.in/yaml.v2"
 )
@@ -19,10 +22,17 @@ type Configuration struct {
 	Key        string `yaml:"key"`
 }
 
+var expath string
+
+func init() {
+	ex, _ := os.Executable()
+	expath = filepath.Dir(ex)
+}
+
 // LoadConfiguration ...
 // Loads configuration to database connection
 func (conf *Configuration) LoadConfiguration() error {
-	file, err := ioutil.ReadFile("configuration/conf.yaml")
+	file, err := ioutil.ReadFile(fmt.Sprintf("%s/configuration/conf.yaml", expath))
 	if err != nil {
 		return err
 	}
@@ -42,5 +52,5 @@ func (conf *Configuration) SaveConfiguration() error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile("configuration/conf.yaml", out, 0644)
+	return ioutil.WriteFile(fmt.Sprintf("%s/configuration/conf.yaml", expath), out, 0644)
 }
